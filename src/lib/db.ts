@@ -5,7 +5,9 @@ let dbInstance: Database | null = null;
 
 async function getDb(): Promise<Database> {
   if (!dbInstance) {
+    console.log('Loading database connection...');
     dbInstance = await Database.load('sqlite:mdnotes.db');
+    console.log('Database loaded successfully');
   }
   return dbInstance;
 }
@@ -30,11 +32,20 @@ export async function createNote(title: string, content: string): Promise<number
     const db = await getDb();
     const now = new Date().toISOString();
     
-    // Get max order_index
-    const maxResult = await db.select<{ max_order: number }[]>(
-      'SELECT COALESCE(MAX(order_index), -1) as max_order FROM notes'
-    );
-    const orderIndex = (maxResult[0]?.max_order ?? -1) + 1;
+    // Get max order_index - handle empty table case
+    let orderIndex = 0;
+    try {
+      const maxResult = await db.select<{ max_order: number }[]>(
+        'SELECT COALESCE(MAX(order_index), -1) as max_order FROM notes'
+      );
+      if (Array.isArray(maxResult) && maxResult.length > 0) {
+        orderIndex = (maxResult[0]?.max_order ?? -1) + 1;
+      }
+    } catch (e) {
+      // If table doesn't exist or is empty, start at 0
+      console.log('No existing notes, starting order_index at 0');
+      orderIndex = 0;
+    }
 
     const result = await db.execute(
       `INSERT INTO notes (title, content, created_at, updated_at, order_index) 
@@ -46,6 +57,7 @@ export async function createNote(title: string, content: string): Promise<number
       throw new Error('Failed to get lastInsertId from database');
     }
     
+    console.log('Note created successfully with id:', result.lastInsertId);
     return result.lastInsertId;
   } catch (error) {
     console.error('Error creating note:', error);

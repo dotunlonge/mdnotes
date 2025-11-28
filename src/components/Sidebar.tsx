@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { useNoteStore } from '../store/useNoteStore';
-import { getNotes, deleteNote } from '../lib/db';
+import { getNotes, deleteNote, createNote } from '../lib/db';
 import { Trash2, Search, Plus } from 'lucide-react';
 
 export function Sidebar() {
@@ -53,7 +53,6 @@ export function Sidebar() {
           onClick={async () => {
             try {
               console.log('Creating new note...');
-              const { createNote } = await import('../lib/db');
               const id = await createNote('Untitled Note', '');
               console.log('Note created with id:', id);
               await loadNotes();
