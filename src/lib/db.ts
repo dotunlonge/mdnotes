@@ -80,8 +80,17 @@ export async function updateNote(
 }
 
 export async function deleteNote(id: number): Promise<void> {
-  const db = await getDb();
-  await db.execute('DELETE FROM notes WHERE id = $1', [id]);
+  try {
+    const db = await getDb();
+    const result = await db.execute('DELETE FROM notes WHERE id = $1', [id]);
+    console.log('Note deleted successfully, rows affected:', result.rowsAffected);
+    if (result.rowsAffected === 0) {
+      throw new Error('Note not found or already deleted');
+    }
+  } catch (error) {
+    console.error('Error deleting note:', error);
+    throw error;
+  }
 }
 
 export async function updateNoteOrder(id: number, orderIndex: number): Promise<void> {

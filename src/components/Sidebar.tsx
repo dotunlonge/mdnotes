@@ -29,9 +29,31 @@ export function Sidebar() {
 
   async function handleDeleteNote(id: number, e: React.MouseEvent) {
     e.stopPropagation();
-    if (confirm('Are you sure you want to delete this note?')) {
+    e.preventDefault();
+    
+    try {
+      console.log('Deleting note with id:', id);
       await deleteNote(id);
+      console.log('Note deleted from database, updating UI...');
+      
       removeNote(id);
+      
+      // If we deleted the currently selected note, select another one or clear selection
+      if (currentNoteId === id) {
+        const remainingNotes = notes.filter(n => n.id !== id);
+        if (remainingNotes.length > 0) {
+          setCurrentNoteId(remainingNotes[0].id!);
+        } else {
+          setCurrentNoteId(null);
+        }
+      }
+      
+      // Reload notes to ensure UI is in sync
+      await loadNotes();
+      console.log('Notes reloaded, deletion complete');
+    } catch (error) {
+      console.error('Error deleting note:', error);
+      alert('Failed to delete note: ' + (error instanceof Error ? error.message : String(error)));
     }
   }
 
@@ -111,8 +133,12 @@ export function Sidebar() {
                     </p>
                   </div>
                   <button
-                    onClick={(e) => handleDeleteNote(note.id!, e)}
-                    className="opacity-0 group-hover:opacity-100 p-1 hover:bg-red-100 dark:hover:bg-red-900/30 rounded transition-opacity"
+                    onClick={(e) => {
+                      console.log('Delete button clicked for note id:', note.id);
+                      handleDeleteNote(note.id!, e);
+                    }}
+                    className="opacity-70 group-hover:opacity-100 p-1.5 hover:bg-red-100 dark:hover:bg-red-900/30 rounded transition-opacity flex-shrink-0"
+                    title="Delete note"
                   >
                     <Trash2 size={16} className="text-red-600 dark:text-red-400" />
                   </button>
